@@ -1,0 +1,7 @@
+*.tar*
+*~
+/.build
+/.perl-version
+/File-Codeowners-*
+/cover_db
+/local
