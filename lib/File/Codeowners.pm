@@ -596,6 +596,17 @@ sub remove_unowned {
     delete $self->_unowned->{$_} for @_;
 }
 
+
+=method is_unowned
+
+    $bool = $codeowners->is_unowned($filepath);
+
+Test whether a filepath is in the "unowned" list.
+
+See L</unowned> for an explanation.
+
+=cut
+
 sub is_unowned {
     my $self     = shift;
     my $filepath = shift;
