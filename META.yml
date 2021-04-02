@@ -28,10 +28,21 @@ no_index:
 provides:
   File::Codeowners:
     file: lib/File/Codeowners.pm
-    version: '0.50'
+    version: '0.51'
+  File::Codeowners::Util:
+    file: lib/File/Codeowners/Util.pm
+    version: '0.51'
+  File::Codeowners::Util::Process:
+    file: lib/File/Codeowners/Util.pm
+    version: '0.51'
+  Test::File::Codeowners:
+    file: lib/Test/File/Codeowners.pm
+    version: '0.51'
 requires:
   Carp: '0'
   Encode: '0'
+  Exporter: '0'
+  IPC::Open2: '0'
   Path::Tiny: '0.089'
   Scalar::Util: '0'
   Text::Gitignore: '0'
@@ -42,7 +53,7 @@ resources:
   bugtracker: https://github.com/chazmcgarvey/File-Codeowners/issues
   homepage: https://github.com/chazmcgarvey/File-Codeowners
   repository: https://github.com/chazmcgarvey/File-Codeowners.git
-version: '0.50'
+version: '0.51'
 x_authority: cpan:CCM
 x_generated_by_perl: v5.28.0
 x_serialization_backend: 'YAML::Tiny version 1.73'

@@ -8,6 +8,8 @@ do { my $x = {
                       'requires' => {
                                       'Dist::Zilla' => '5',
                                       'Dist::Zilla::Plugin::ConsistentVersionTest' => '0',
+                                      'Dist::Zilla::Plugin::Prereqs' => '0',
+                                      'Dist::Zilla::Plugin::RemovePhasedPrereqs' => '0',
                                       'Dist::Zilla::PluginBundle::Author::CCM' => '0',
                                       'Dist::Zilla::PluginBundle::Filter' => '0',
                                       'Pod::Coverage::TrustPod' => '0',
@@ -30,12 +32,17 @@ do { my $x = {
                       'requires' => {
                                       'Carp' => '0',
                                       'Encode' => '0',
+                                      'Exporter' => '0',
+                                      'IPC::Open2' => '0',
                                       'Path::Tiny' => '0.089',
                                       'Scalar::Util' => '0',
                                       'Text::Gitignore' => '0',
                                       'perl' => 'v5.10.1',
                                       'strict' => '0',
                                       'warnings' => '0'
+                                    },
+                      'suggests' => {
+                                      'Test::Builder' => '0'
                                     }
                     },
        'test' => {
