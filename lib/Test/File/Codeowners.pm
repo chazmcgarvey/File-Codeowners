@@ -21,7 +21,7 @@ use warnings;
 use strict;
 
 use Encode qw(encode);
-use File::Codeowners::Util qw(find_nearest_codeowners git_ls_files git_toplevel);
+use File::Codeowners::Util qw(find_codeowners_in_directory find_nearest_codeowners git_ls_files git_toplevel);
 use File::Codeowners;
 use Test::Builder;
 
@@ -52,6 +52,12 @@ Check the syntax of a F<CODEOWNERS> file.
 sub codeowners_syntax_ok {
     my $filepath = shift || find_nearest_codeowners();
 
+    if (!$filepath) {
+        $Test->ok(0, "Check syntax: <missing>");
+        $Test->diag('No CODEOWNERS file could be found.');
+        return;
+    }
+
     eval { File::Codeowners->parse($filepath) };
     my $err = $@;
 
@@ -61,13 +67,26 @@ sub codeowners_syntax_ok {
 
 =func codeowners_git_files_ok
 
-    codeowners_git_files_ok();  # search up the tree for a CODEOWNERS file
-    codeowners_git_files_ok($filepath);
+    codeowners_git_files_ok();  # use git repo in cwd
+    codeowners_git_files_ok($repopath);
 
 =cut
 
 sub codeowners_git_files_ok {
-    my $filepath = shift || find_nearest_codeowners();
+    my $repopath = shift || '.';
+
+    my $git_toplevel = git_toplevel($repopath);
+    if (!$git_toplevel) {
+        $Test->skip('No git repo could be found.');
+        return;
+    }
+
+    my $filepath = find_codeowners_in_directory($git_toplevel);
+    if (!$filepath) {
+        $Test->ok(0, "Check syntax: <missing>");
+        $Test->diag("No CODEOWNERS file could be found in repo $repopath.");
+        return;
+    }
 
     $Test->subtest('codeowners_git_files_ok' => sub {
         my $codeowners = eval { File::Codeowners->parse($filepath) };
@@ -78,9 +97,13 @@ sub codeowners_git_files_ok {
             return;
         }
 
-        my ($proc, @files) = git_ls_files(git_toplevel());
+        my ($proc, @files) = git_ls_files($git_toplevel);
+        if ($proc->wait != 0) {
+            $Test->plan(skip_all => 'git ls-files failed');
+            return;
+        }
 
-        $Test->plan($proc->wait == 0 ? (tests => scalar @files) : (skip_all => 'git ls-files failed'));
+        $Test->plan(tests => scalar @files);
 
         for my $filepath (@files) {
             my $msg = encode('UTF-8', "Check file: $filepath");
@@ -98,6 +121,10 @@ sub codeowners_git_files_ok {
             }
             else {
                 $Test->ok(1, $msg);
+                if ($match) {
+                    my $owners = encode('UTF-8', join(',', @{$match->{owners}}));
+                    $Test->note("File is owned by $owners");
+                }
             }
         }
     });
