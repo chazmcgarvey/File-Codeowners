@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(
     run_git
 );
 
-our $VERSION = '0.51'; # VERSION
+our $VERSION = '0.52'; # VERSION
 
 
 sub find_nearest_codeowners {
@@ -182,7 +182,7 @@ File::Codeowners::Util - Grab bag of utility subs for Codeowners modules
 
 =head1 VERSION
 
-version 0.51
+version 0.52
 
 =head1 DESCRIPTION
 
