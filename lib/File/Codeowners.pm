@@ -10,7 +10,7 @@ use Path::Tiny 0.089;
 use Scalar::Util qw(openhandle);
 use Text::Gitignore qw(build_gitignore_matcher);
 
-our $VERSION = '0.52'; # VERSION
+our $VERSION = '0.53'; # VERSION
 
 sub _croak { require Carp; Carp::croak(@_); }
 sub _usage { _croak("Usage: @_\n") }
@@ -432,7 +432,7 @@ File::Codeowners - Read and write CODEOWNERS files
 
 =head1 VERSION
 
-version 0.52
+version 0.53
 
 =head1 METHODS
 

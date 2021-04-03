@@ -8,9 +8,10 @@ use strict;
 use Encode qw(encode);
 use File::Codeowners::Util qw(find_codeowners_in_directory find_nearest_codeowners git_ls_files git_toplevel);
 use File::Codeowners;
+use FindBin qw($Bin);
 use Test::Builder;
 
-our $VERSION = '0.52'; # VERSION
+our $VERSION = '0.53'; # VERSION
 
 my $Test = Test::Builder->new;
 
@@ -27,7 +28,7 @@ sub import {
 
 
 sub codeowners_syntax_ok {
-    my $filepath = shift || find_nearest_codeowners();
+    my $filepath = shift || find_nearest_codeowners($Bin);
 
     if (!$filepath) {
         $Test->ok(0, "Check syntax: <missing>");
@@ -44,7 +45,7 @@ sub codeowners_syntax_ok {
 
 
 sub codeowners_git_files_ok {
-    my $repopath = shift || '.';
+    my $repopath = shift || $Bin;
 
     my $git_toplevel = git_toplevel($repopath);
     if (!$git_toplevel) {
@@ -60,6 +61,8 @@ sub codeowners_git_files_ok {
     }
 
     $Test->subtest('codeowners_git_files_ok' => sub {
+        local $Test::Builder::Level = $Test::Builder::Level + 3;
+
         my $codeowners = eval { File::Codeowners->parse($filepath) };
         if (my $err = $@) {
             $Test->plan(tests => 1);
@@ -115,7 +118,7 @@ Test::File::Codeowners - Write tests for CODEOWNERS files
 
 =head1 VERSION
 
-version 0.52
+version 0.53
 
 =head1 SYNOPSIS
 

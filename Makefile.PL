@@ -20,6 +20,7 @@ my %WriteMakefileArgs = (
     "Carp" => 0,
     "Encode" => 0,
     "Exporter" => 0,
+    "FindBin" => 0,
     "IPC::Open2" => 0,
     "Path::Tiny" => "0.089",
     "Scalar::Util" => 0,
@@ -30,12 +31,11 @@ my %WriteMakefileArgs = (
   "TEST_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0,
     "File::Spec" => 0,
-    "FindBin" => 0,
     "IO::Handle" => 0,
     "IPC::Open3" => 0,
     "Test::More" => 0
   },
-  "VERSION" => "0.52",
+  "VERSION" => "0.53",
   "test" => {
     "TESTS" => "t/*.t"
   }
