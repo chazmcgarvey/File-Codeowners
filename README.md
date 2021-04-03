@@ -4,7 +4,7 @@ File::Codeowners - Read and write CODEOWNERS files
 
 # VERSION
 
-version 0.51
+version 0.52
 
 # METHODS
 
