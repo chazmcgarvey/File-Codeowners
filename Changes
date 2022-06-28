@@ -1,6 +1,8 @@
 Revision history for File-Codeowners.
 
 {{$NEXT}}
+
+0.54      2022-06-28 16:24:46-06:00 America/Denver
   * Add support for group alias defined in CODEOWNERS files.
 
 0.53      2021-04-02 19:47:45-06:00 America/Denver

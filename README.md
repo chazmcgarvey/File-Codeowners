@@ -4,7 +4,13 @@ File::Codeowners - Read and write CODEOWNERS files
 
 # VERSION
 
-version 0.53
+version 0.54
+
+# DESCRIPTION
+
+This module parses and generates `CODEOWNERS` files.
+
+See [CODEOWNERS syntax](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-syntax).
 
 # METHODS
 
@@ -16,37 +22,41 @@ Construct a new [File::Codeowners](https://metacpan.org/pod/File%3A%3ACodeowners
 
 ## parse
 
-    $codeowners = File::Codeowners->parse('path/to/CODEOWNERS');
-    $codeowners = File::Codeowners->parse($filehandle);
-    $codeowners = File::Codeowners->parse(\@lines);
-    $codeowners = File::Codeowners->parse(\$string);
+    $codeowners = File::Codeowners->parse($filepath, @options);
+    $codeowners = File::Codeowners->parse(*IO, @options);
+    $codeowners = File::Codeowners->parse(\@lines, @options);
+    $codeowners = File::Codeowners->parse(\$string, @options);
 
 Parse a `CODEOWNERS` file.
 
 This is a shortcut for the `parse_from_*` methods.
 
+Possible options:
+
+- `aliases` - Parse lines that begin with "@" as aliases (default: false)
+
 ## parse\_from\_filepath
 
-    $codeowners = File::Codeowners->parse_from_filepath('path/to/CODEOWNERS');
+    $codeowners = File::Codeowners->parse_from_filepath($filepath, @options);
 
 Parse a `CODEOWNERS` file from the filesystem.
 
 ## parse\_from\_fh
 
-    $codeowners = File::Codeowners->parse_from_fh($filehandle);
+    $codeowners = File::Codeowners->parse_from_fh(*IO, @options);
 
 Parse a `CODEOWNERS` file from an open filehandle.
 
 ## parse\_from\_array
 
-    $codeowners = File::Codeowners->parse_from_array(\@lines);
+    $codeowners = File::Codeowners->parse_from_array(\@lines, @options);
 
 Parse a `CODEOWNERS` file stored as lines in an array.
 
 ## parse\_from\_string
 
-    $codeowners = File::Codeowners->parse_from_string(\$string);
-    $codeowners = File::Codeowners->parse_from_string($string);
+    $codeowners = File::Codeowners->parse_from_string(\$string, @options);
+    $codeowners = File::Codeowners->parse_from_string($string, @options);
 
 Parse a `CODEOWNERS` file stored as a string. String should be UTF-8 encoded.
 
@@ -64,25 +74,29 @@ Format the file contents and write to a filehandle.
 
 ## write\_to\_string
 
-    $scalarref = $codeowners->write_to_string;
+    \$string = $codeowners->write_to_string;
 
 Format the file contents and return a reference to a formatted string.
 
 ## write\_to\_array
 
-    $lines = $codeowners->write_to_array;
+    \@lines = $codeowners->write_to_array;
 
 Format the file contents as an arrayref of lines.
 
 ## match
 
-    $owners = $codeowners->match($filepath);
+    \%match = $codeowners->match($filepath, %options);
 
 Match the given filepath against the available patterns and return just the
 owners for the matching pattern. Patterns are checked in the reverse order
 they were defined in the file.
 
 Returns `undef` if no patterns match.
+
+Possible options:
+
+- `expand` - Expand group aliases defined in the `CODEOWNERS` file.
 
 ## owners
 
@@ -101,9 +115,15 @@ defined in the file.
 
 Get an arrayref of all patterns defined.
 
+## aliases
+
+    \%aliases = $codeowners->aliases;
+
+Get a hashref of all aliases defined.
+
 ## projects
 
-    $projects = $codeowners->projects;
+    \@projects = $codeowners->projects;
 
 Get an arrayref of all projects defined.
 
@@ -158,7 +178,7 @@ Prepend a new line.
 
 ## unowned
 
-    $filepaths = $codeowners->unowned;
+    \@filepaths = $codeowners->unowned;
 
 Get the list of filepaths in the "unowned" section.
 
