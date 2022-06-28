@@ -12,6 +12,9 @@ use Text::Gitignore qw(build_gitignore_matcher);
 
 our $VERSION = '9999.999'; # VERSION
 
+my $RE_PATTERN  = qr/.+?(?<!\\)/;
+my $RE_OWNER    = qr/(?:\@+"[^"]*")|(?:\H+)/;
+
 sub _croak { require Carp; Carp::croak(@_); }
 sub _usage { _croak("Usage: @_\n") }
 
@@ -30,14 +33,19 @@ sub new {
 
 =method parse
 
-    $codeowners = File::Codeowners->parse('path/to/CODEOWNERS');
-    $codeowners = File::Codeowners->parse($filehandle);
-    $codeowners = File::Codeowners->parse(\@lines);
-    $codeowners = File::Codeowners->parse(\$string);
+    $codeowners = File::Codeowners->parse($filepath, @options);
+    $codeowners = File::Codeowners->parse(*IO, @options);
+    $codeowners = File::Codeowners->parse(\@lines, @options);
+    $codeowners = File::Codeowners->parse(\$string, @options);
 
 Parse a F<CODEOWNERS> file.
 
 This is a shortcut for the C<parse_from_*> methods.
+
+Possible options:
+
+=for :list
+* C<aliases> - Parse lines that begin with "@" as aliases (default: false)
 
 =cut
 
@@ -45,16 +53,15 @@ sub parse {
     my $self  = shift;
     my $input = shift or _usage(q{$codeowners->parse($input)});
 
-    return $self->parse_from_array($input, @_) if @_;
-    return $self->parse_from_array($input)  if ref($input) eq 'ARRAY';
-    return $self->parse_from_string($input) if ref($input) eq 'SCALAR';
-    return $self->parse_from_fh($input)     if openhandle($input);
-    return $self->parse_from_filepath($input);
+    return $self->parse_from_array($input, @_)  if ref($input) eq 'ARRAY';
+    return $self->parse_from_string($input, @_) if ref($input) eq 'SCALAR';
+    return $self->parse_from_fh($input, @_)     if openhandle($input);
+    return $self->parse_from_filepath($input, @_);
 }
 
 =method parse_from_filepath
 
-    $codeowners = File::Codeowners->parse_from_filepath('path/to/CODEOWNERS');
+    $codeowners = File::Codeowners->parse_from_filepath($filepath, @options);
 
 Parse a F<CODEOWNERS> file from the filesystem.
 
@@ -66,12 +73,12 @@ sub parse_from_filepath {
 
     $self = bless({}, $self) if !ref($self);
 
-    return $self->parse_from_fh(path($path)->openr_utf8);
+    return $self->parse_from_fh(path($path)->openr_utf8, @_);
 }
 
 =method parse_from_fh
 
-    $codeowners = File::Codeowners->parse_from_fh($filehandle);
+    $codeowners = File::Codeowners->parse_from_fh(*IO, @options);
 
 Parse a F<CODEOWNERS> file from an open filehandle.
 
@@ -80,6 +87,7 @@ Parse a F<CODEOWNERS> file from an open filehandle.
 sub parse_from_fh {
     my $self = shift;
     my $fh   = shift or _usage(q{$codeowners->parse_from_fh($fh)});
+    my %opts = @_;
 
     $self = bless({}, $self) if !ref($self);
 
@@ -87,6 +95,7 @@ sub parse_from_fh {
 
     my $parse_unowned;
     my %unowned;
+    my %aliases;
     my $current_project;
 
     while (my $line = <$fh>) {
@@ -110,9 +119,18 @@ sub parse_from_fh {
         elsif ($line =~ /^\h*$/) {
             # blank line
         }
-        elsif ($line =~ /^\h*(.+?)(?<!\\)\h+(.+)/) {
+        elsif ($opts{aliases} && $line =~ /^\h*\@($RE_OWNER)\h+(.+)/) {
+            my $alias   = $1;
+            my @owners  = $2 =~ /($RE_OWNER)/g;
+            $aliases{$alias} = \@owners;
+            $lines[$lineno] = {
+                alias   => $alias,
+                owners  => \@owners,
+            };
+        }
+        elsif ($line =~ /^\h*($RE_PATTERN)\h+(.+)/) {
             my $pattern = $1;
-            my @owners  = $2 =~ /( (?:\@+"[^"]*") | (?:\H+) )/gx;
+            my @owners  = $2 =~ /($RE_OWNER)/g;
             $lines[$lineno] = {
                 pattern => $pattern,
                 owners  => \@owners,
@@ -136,13 +154,14 @@ sub parse_from_fh {
 
     $self->{lines} = \@lines;
     $self->{unowned} = \%unowned;
+    $self->{aliases} = \%aliases;
 
     return $self;
 }
 
 =method parse_from_array
 
-    $codeowners = File::Codeowners->parse_from_array(\@lines);
+    $codeowners = File::Codeowners->parse_from_array(\@lines, @options);
 
 Parse a F<CODEOWNERS> file stored as lines in an array.
 
@@ -154,15 +173,14 @@ sub parse_from_array {
 
     $self = bless({}, $self) if !ref($self);
 
-    $arr = [$arr, @_] if @_;
     my $str = join("\n", @$arr);
-    return $self->parse_from_string(\$str);
+    return $self->parse_from_string(\$str, @_);
 }
 
 =method parse_from_string
 
-    $codeowners = File::Codeowners->parse_from_string(\$string);
-    $codeowners = File::Codeowners->parse_from_string($string);
+    $codeowners = File::Codeowners->parse_from_string(\$string, @options);
+    $codeowners = File::Codeowners->parse_from_string($string, @options);
 
 Parse a F<CODEOWNERS> file stored as a string. String should be UTF-8 encoded.
 
@@ -177,7 +195,7 @@ sub parse_from_string {
     my $ref = ref($str) eq 'SCALAR' ? $str : \$str;
     open(my $fh, '<:encoding(UTF-8)', $ref) or die "open failed: $!";
 
-    return $self->parse_from_fh($fh);
+    return $self->parse_from_fh($fh, @_);
 }
 
 =method write_to_filepath
@@ -215,7 +233,7 @@ sub write_to_fh {
 
 =method write_to_string
 
-    $scalarref = $codeowners->write_to_string;
+    \$string = $codeowners->write_to_string;
 
 Format the file contents and return a reference to a formatted string.
 
@@ -231,7 +249,7 @@ sub write_to_string {
 
 =method write_to_array
 
-    $lines = $codeowners->write_to_array;
+    \@lines = $codeowners->write_to_array;
 
 Format the file contents as an arrayref of lines.
 
@@ -250,6 +268,10 @@ sub write_to_array {
         elsif (my $pattern = $line->{pattern}) {
             my $owners = join(' ', @{$line->{owners}});
             push @format, "$pattern  $owners";
+        }
+        elsif (my $alias = $line->{alias}) {
+            my $owners = join(' ', @{$line->{owners}});
+            push @format, "\@$alias  $owners";
         }
         else {
             push @format, '';
@@ -273,7 +295,7 @@ sub write_to_array {
 
 =method match
 
-    $owners = $codeowners->match($filepath);
+    \%match = $codeowners->match($filepath, %options);
 
 Match the given filepath against the available patterns and return just the
 owners for the matching pattern. Patterns are checked in the reverse order
@@ -281,11 +303,27 @@ they were defined in the file.
 
 Returns C<undef> if no patterns match.
 
+Possible options:
+
+=for :list
+* C<expand> - Expand group aliases defined in the F<CODEOWNERS> file.
+
 =cut
 
 sub match {
     my $self     = shift;
     my $filepath = shift or _usage(q{$codeowners->match($filepath)});
+    my %opts     = @_;
+
+    my $expand = $opts{expand} ? do {
+        my $aliases = $self->aliases;
+        sub {
+            my $owner = shift;
+            my $alias = $aliases->{$owner};
+            return @$alias if $alias;
+            return $owner;
+        };
+    } : sub { shift };  # noop
 
     my $lines = $self->{match_lines} ||= [reverse grep { ($_ || {})->{pattern} } @{$self->_lines}];
 
@@ -293,7 +331,7 @@ sub match {
         my $matcher = $line->{matcher} ||= build_gitignore_matcher([$line->{pattern}]);
         return {    # deep copy
             pattern => $line->{pattern},
-            owners  => [@{$line->{owners} || []}],
+            owners  => [map { $expand->($_) } @{$line->{owners} || []}],
             $line->{project} ? (project => $line->{project}) : (),
         } if $matcher->($filepath);
     }
@@ -359,9 +397,31 @@ sub patterns {
     return $patterns;
 }
 
+=method aliases
+
+    \%aliases = $codeowners->aliases;
+
+Get a hashref of all aliases defined.
+
+=cut
+
+sub aliases {
+    my $self = shift;
+
+    return $self->{aliases} if $self->{aliases};
+
+    my %aliases;
+    for my $line (@{$self->_lines}) {
+        next if !defined $line->{alias};
+        $aliases{$line->{alias}} = [@{$line->{owners}}];
+    }
+
+    return $self->{aliases} = \%aliases;
+}
+
 =method projects
 
-    $projects = $codeowners->projects;
+    \@projects = $codeowners->projects;
 
 Get an arrayref of all projects defined.
 
@@ -545,7 +605,7 @@ sub prepend {
 
 =method unowned
 
-    $filepaths = $codeowners->unowned;
+    \@filepaths = $codeowners->unowned;
 
 Get the list of filepaths in the "unowned" section.
 
@@ -636,7 +696,16 @@ sub _clear {
     delete $self->{match_lines};
     delete $self->{owners};
     delete $self->{patterns};
+    delete $self->{aliases};
     delete $self->{projects};
 }
+
+=head1 DESCRIPTION
+
+This module parses and generates F<CODEOWNERS> files.
+
+See L<CODEOWNERS syntax|https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-syntax>.
+
+=cut
 
 1;
